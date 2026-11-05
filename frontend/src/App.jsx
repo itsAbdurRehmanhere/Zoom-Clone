@@ -7,6 +7,7 @@ import SignupPage from "./features/auth/SignupPage";
 import Dashboard from "./features/rooms/Dashboard";
 import Room from "./features/call/Room";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import Lobby from "./features/call/Lobby";
 
 export default function App() {
   const dispatch = useDispatch()
@@ -23,7 +24,8 @@ export default function App() {
       <Route path="/signup" element={<SignupPage/>}/>
       <Route element={<ProtectedRoute/>}>
         <Route path="/" element={<Dashboard/>}/>
-        <Route path="/room/:roomId" element={<Room/>}/>
+        <Route path="/room/:code/lobby" element={< Lobby/>}/>
+        <Route path="/room/:code" element={< Room/>}/>
       </Route>
      </Routes> 
     )
