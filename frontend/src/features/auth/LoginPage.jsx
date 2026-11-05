@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { login } from "./authSlice";
 
 
 export default function LoginPage() {
@@ -20,7 +21,7 @@ export default function LoginPage() {
     const handleSubmit = async (e) =>{
         e.preventDefault()
         const result = await dispatch(login(form))
-        if (login.fullfilled.match(result)) navigate(form, {replace: true})
+        if (login.fulfilled.match(result)) navigate(from, {replace: true})
     }
 
     return (

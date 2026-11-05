@@ -1,5 +1,5 @@
 import { useSelector } from "react-redux"
-import { Navigate, useLocation } from "react-router-dom"
+import { Navigate, Outlet, useLocation } from "react-router-dom"
 
 export default function ProtectedRoute() {
     const token = useSelector((state) => state.auth.token)

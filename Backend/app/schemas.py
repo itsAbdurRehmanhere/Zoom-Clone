@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from datetime import datetime
 
 class SignupIn(BaseModel):
     name:str = Field(min_length=1, max_length=100)
@@ -18,3 +19,18 @@ class UserOut(BaseModel):
 class AuthOut(BaseModel):
     access_token: str
     user: UserOut
+    
+    
+class RoomCreate(BaseModel):
+    title: str = Field(default="Untitled meeting", min_length=1, max_length=100)
+    scheduled_at: datetime | None= None
+    
+class RoomOut(BaseModel):
+    model_config =ConfigDict(from_attributes=True)
+    
+    id: int
+    code: str
+    title: str
+    host_id: int
+    scheduled_at: datetime | None
+    created_at: datetime
