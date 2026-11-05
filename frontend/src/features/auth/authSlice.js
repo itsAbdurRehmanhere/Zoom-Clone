@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, isAnyOf } from "@reduxjs/toolkit";
-import api from "../../utils/api";
+import api from "../../lib/api";
 
 export const login = createAsyncThunk('auth/login', async (creds, {rejectWithValue}) =>{
     try{
@@ -50,7 +50,7 @@ const authSlice = createSlice({
     },
     extraReducers: (builder) => {
         builder
-            .addCase(fetchMe.fullfilled, (state, action) =>{
+            .addCase(fetchMe.fulfilled, (state, action) =>{
                 state.user = action.payload
             })
             .addCase(fetchMe.rejected, (state, action) => {
@@ -61,7 +61,7 @@ const authSlice = createSlice({
                 state.status = 'loading'
                 state.error = null
             })
-            .addMatcher(isAnyOf(login.fullfilled, signup.fullfilled), (state, action) =>{
+            .addMatcher(isAnyOf(login.fulfilled, signup.fulfilled), (state, action) =>{
                 state.status = 'succeeded'
                 state.token = action.payload.access_token
                 state.user = action.payload.user
