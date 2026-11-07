@@ -42,7 +42,7 @@ export default function ChatPanel({ onSend, onClose }) {
                 {mine ? 'You' : m.name} · {time}
               </p>
               <p
-                className={`inline-block max-w-full whitespace-pre-wrap break-words rounded-lg px-3 py-2 text-left text-sm ${
+                className={`inline-block max-w-full whitespace-pre-wrap wrap-break-word rounded-lg px-3 py-2 text-left text-sm ${
                   mine ? 'bg-blue-600' : 'bg-slate-700'
                 }`}
               >

@@ -10,7 +10,7 @@ export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-  const items = useSelector((state) => state.rooms.items);
+  const items = useSelector((state) => state.room.items);
 
   useEffect(() => {
     dispatch(fetchRooms());
@@ -21,13 +21,13 @@ export default function Dashboard() {
       createRoom({ title: title.trim() || "Untitled meeting" }),
     );
     if (createRoom.fulfilled.match(result))
-      navigate(`/room/${result.payload.code}`);
+      navigate(`/room/${result.payload.code}/lobby`);
   };
 
   const handleJoin = (e) => {
     e.preventDefault();
     const value = code.trim().split("/").pop().toLowerCase();
-    if (value) navigate(`/room/${value}`);
+    if (value) navigate(`/room/${value}/lobby`);
   };
 
   const copyLink = (roomCode) =>
@@ -82,7 +82,7 @@ export default function Dashboard() {
               </div>
               <div className="flex gap-2">
                 <button onClick={()=> copyLink(room.code)} className="rounde bg-slate-700 px-3 py-1 text-sm">Copy link</button>
-                <button onClick={() => navigate(`/room/${room.code}`)} className="rounded bg-blue-600 px-3 py-1 text-sm">Join</button>
+                <button onClick={() => navigate(`/room/${room.code}/lobby`)} className="rounded bg-blue-600 px-3 py-1 text-sm">Join</button>
               </div>
             </div>
           ))}
