@@ -4,7 +4,7 @@ import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from sqlalchemy import select
 from ..database import SessionLocal
-from ..models import Room, User
+from ..models import Room, User, Message
 from ..security import decode_access_token
 from ..ws_manager import ConnectionManager, Peer
 
@@ -14,6 +14,8 @@ manager = ConnectionManager()
 
 MAX_PEERS = 6
 RELAY_TYPES = {"offer", "answer", "ice"}
+MAX_CHAT_LENGTH = 2000
+HISTORY_LIMIT = 50
 
 
 def authenticate(token:str, code:str):
@@ -27,9 +29,45 @@ def authenticate(token:str, code:str):
         if not user:
             return None, 4401
         
-        if not db.scalar(select(Room.id).where(Room.code == code)):
+        # if not db.scalar(select(Room.id).where(Room.code == code)):
+        #     return None, 4404
+        # return {"id": user_id, "name": user.name}, None
+        
+        room_id = db.scalar(select(Room.id).where(Room.code == code))
+        if not room_id:
             return None, 4404
-        return {"id": user_id, "name": user.name}, None
+        return {"id": user_id, "name": user.name, "room_id": room_id}, None
+    
+def message_to_dict(m: Message) -> dict:
+    return{
+        "type": "chat",
+        "id" : m.id,
+        "user_id": m.user_id,
+        "name" : m.sender_name,
+        "text" : m.text,
+        "created_at" : m.created_at.isoformat(),
+    }
+    
+def load_history(room_id: int) -> list[dict]:
+    with SessionLocal() as db:
+        stmt = (
+            select(Message)
+            .where(Message.room_id == room_id)
+            .order_by(Message.id.desc())
+            .limit(HISTORY_LIMIT)
+        )
+        return [message_to_dict(m) for m in reversed(db.scalars(stmt).all())]
+    
+def save_message(room_id: int, user_id: int, name: str, text: str) -> dict:
+    with SessionLocal() as db:
+        
+        m = Message(room_id=room_id, user_id=user_id, sender_name=name, text=text)
+        db.add(m)
+        db.commit()
+        db.refresh(m)
+        return message_to_dict(m)
+    
+
     
     
 
@@ -47,7 +85,8 @@ async def room_socket(ws: WebSocket, code: str):
         if first.get("type") != "join":
             await ws.close(code=4400)
             return
-        user, err = authenticate(first.get("token", ""), code)
+        # user, err = authenticate(first.get("token", ""), code)
+        user, err = await asyncio.to_thread(authenticate, first.get("token", ""), code)
         if err:
             await ws.close(code=err)
             return
@@ -61,9 +100,13 @@ async def room_socket(ws: WebSocket, code: str):
         existing = [p.public() for p in manager.members(code)]
         manager.add(code, peer)
         
-        await ws.send_json({"type": "joined", "peer_id": peer.peer_id, "peers": existing})
+        # await ws.send_json({"type": "joined", "peer_id": peer.peer_id, "peers": existing})
+        history = await asyncio.to_thread(load_history, user["room_id"])
+        await ws.send_json(
+            {"type": "joined", "peer_id": peer.peer_id, "peers": existing, "messages": history}
+        )
         await manager.broadcast(
-            code, {"type": "peer_joined", "peer":peer.punlic()}, exclude=peer.peer_id
+            code, {"type": "peer_joined", "peer":peer.public()}, exclude=peer.peer_id
         )
         
         while True:
@@ -73,17 +116,26 @@ async def room_socket(ws: WebSocket, code: str):
             if mtype in RELAY_TYPES:
                 await manager.send(code, msg.get("to", ""), {**msg, "from":peer.peer_id})
                 
-            elif mtypr == "state":
+            elif mtype == "state":
                 await manager.broadcast(
                     code,
                     {
-                        "typr": "peer_state",
+                        "type": "peer_state",
                         "peer_id": peer.peer_id,
-                        "micOn": bool(msg.get("micOn", True))
-                        "camOn": bool(msg.get("camOn", True))
+                        "micOn": bool(msg.get("micOn", True)),
+                        "camOn": bool(msg.get("camOn", True)),
                     },
                     exclude=peer.peer_id,
                 )
+                
+            elif mtype == "chat":
+                text = str(msg.get("text", "")).strip()[:MAX_CHAT_LENGTH]
+                if not text:
+                    continue
+                saved = await asyncio.to_thread(
+                    save_message, user["room_id"], user["id"], peer.name, text
+                )
+                await manager.broadcast(code, saved)
     except WebSocketDisconnect:
         pass
     finally:

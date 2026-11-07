@@ -1,12 +1,12 @@
 from dataclasses import dataclass
-from fastapi import websockets
+from fastapi import WebSocket
 
 @dataclass
 class Peer:
     peer_id: str
     user_id: int
     name: str
-    ws: websockets
+    ws: WebSocket
     
     def public(self) ->dict:
         return{"peer_id": self.peer_id, "user_id": self.user_id, "name": self.name}

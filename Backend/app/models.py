@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional
-from sqlalchemy import String, DateTime, ForeignKey
+from sqlalchemy import String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .database import Base
 
@@ -26,4 +26,17 @@ class Room(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda:datetime.now(timezone.utc))
     
     host: Mapped["User"] = relationship()
+    
+    
+class Message(Base):
+    __tablename__ = "messages"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    sender_name: Mapped[str] = mapped_column(String(100))
+    text: Mapped[str] = mapped_column(Text)
+    created_at : Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default = lambda : datetime.now(timezone.utc)
+    )
+    
     
