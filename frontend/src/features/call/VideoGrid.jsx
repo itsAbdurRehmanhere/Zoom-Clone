@@ -11,7 +11,7 @@ function VideoTile({ stream, name, muted = false, mirrored = false, camOn = true
 
   return (
     <div
-      className={`relative aspect-video overflow-hidden rounded-xl bg-slate-800 ring-4 transition-shadow ${
+      className={`relative h-full min-h-0 min-w-0 overflow-hidden rounded-xl bg-slate-800 ring-4 transition-shadow ${
         speaking ? 'ring-green-500' : 'ring-transparent'
       }`}
     >
@@ -46,10 +46,47 @@ export default function VideoGrid({
 }) {
   const peers = Object.values(participants)
   const total = peers.length + 1
-  const cols = total === 1 ? 'grid-cols-1' : total <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+//   const cols = total === 1 ? 'grid-cols-1' : total <= 4 ? 'grid-cols-2' : 'grid-cols-3'
+
+//   return (
+//     <div className='flex min-h-0 flex-1 overflow-auto'>
+//         <div 
+//         className={`m-auto grid w-full gap-3 p-3 ${
+//             total === 1 ? 'max-w-3xl' : 'max-w-6xl'
+//         }${cols}`}
+//         >
+//       <VideoTile
+//         stream={localStream}
+//         name={`${localName} (You)`}
+//         muted
+//         mirrored={localMirrored}
+//         camOn={camOn}
+//         micOn={micOn}
+//       />
+//       {peers.map((p) => (
+//         <VideoTile
+//           key={p.peer_id}
+//           stream={remoteStreams[p.peer_id]}
+//           name={p.name}
+//           camOn={p.camOn}
+//           micOn={p.micOn}
+//         />
+//       ))}
+//     </div>
+//     </div>
+//   )
+
+  const cols = total === 1 ? 1 : total <= 4 ? 2 : 3
+  const rows = Math.ceil(total / cols)
 
   return (
-    <div className={`grid flex-1 content-center gap-3 p-3 ${cols}`}>
+    <div
+      className="grid min-h-0 min-w-0 flex-1 gap-3 p-3"
+      style={{
+        gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+        gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+      }}
+    >
       <VideoTile
         stream={localStream}
         name={`${localName} (You)`}

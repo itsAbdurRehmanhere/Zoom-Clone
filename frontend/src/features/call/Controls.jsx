@@ -20,14 +20,17 @@ export default function Controls({
     camOn,
     sharing,
     hasMedia,
+    chatOpen,
+    unread,
     onToggleMic,
     onToggleCam,
     onToggleShare,
     onCopyLink,
+    onToggleChat,
     onLeave,
 }){
     return (
-        <div className="flex flex-wrap items-center justify-center gap-3 border-t border-slate-700">
+        <div className="flex shrink-0 flex-wrap items-center justify-center gap-3 border-t border-slate-700">
             <ControlButton
             label={micOn ? "Mute":"Unmute"}
             tone= {micOn ? "neutral": "off"}
@@ -45,6 +48,11 @@ export default function Controls({
             tone= {sharing ? "neutral": "off"}
             onClick={onToggleShare}
             disabled={!hasMedia}
+            />
+            <ControlButton
+            label={unread > 0 ? `chat(${unread})` : "Chat"}
+            tone= {chatOpen ? "on" : "neutral"}
+            onClick={onToggleChat}
             />
             <ControlButton label="Copy link" onClick={onCopyLink} />
             <ControlButton label="Leave" onClick={onLeave}/>

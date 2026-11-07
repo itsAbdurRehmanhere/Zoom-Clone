@@ -166,8 +166,10 @@ function CallScreen({ code }) {
   const chatOpen = useSelector((state) => state.chat.open)
   const unread = useSelector((state) => state.chat.unread)
 
-  const sendChat = (text) => signalingRef.current?.send({typr: 'chat', text})
-
+  const sendChat = (text, isPrivate) => signalingRef.current?.send({type: 'chat', text, private: isPrivate})
+  const me = useSelector((state) => state.auth.user)
+  const isHost = !!room && room.host_id === me?.id
+  
   const [remoteStreams, setRemoteStreams] = useState({})
   const [connectionError, setConnectionError] = useState(null)
   const [screenStream, setScreenStream] = useState(null)
@@ -327,7 +329,7 @@ function CallScreen({ code }) {
         remoteStreams={remoteStreams}
         participants={participants}
       />
-      {chatOpen && <ChatPanel onSend={sendChat} onClose={() => dispatch(toggleChat)} />}
+      {chatOpen && <ChatPanel onSend={sendChat} onClose={() => dispatch(toggleChat())} isHost={isHost} />}
       </div>
 
       <Controls
@@ -342,7 +344,7 @@ function CallScreen({ code }) {
         onLeave={() => navigate('/')}
         chatOpen={chatOpen}
         unread={unread}
-        onToggleChat={()=>dispatch(toggleChat)}
+        onToggleChat={()=>dispatch(toggleChat())}
       />
     </div>
   )

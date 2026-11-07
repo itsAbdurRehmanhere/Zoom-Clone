@@ -2,15 +2,15 @@ import { createSlice } from "@reduxjs/toolkit";
 
 const chatSlice = createSlice({
     name: 'chat',
-    initialState : {message: [], unread: 0, open: false},
+    initialState : {messages: [], unread: 0, open: false},
     reducers: {
         setMessages(state, action) {
-            state.message = action.payload
+            state.messages = action.payload
         },
         addMessages(state, action){
             const m = action.payload
-            if( state.message.some((x) => x.id === m.id)) return
-            state.message.push(m)
+            if( state.messages.some((x) => x.id === m.id)) return
+            state.messages.push(m)
             if(!state.open) state.unread += 1
         },
         toggleChat(state){
@@ -18,7 +18,7 @@ const chatSlice = createSlice({
             if(state.open) state.unread = 0
         },
         clearChat(state){
-            state.message = []
+            state.messages = []
             state.unread = 0
         },
     },

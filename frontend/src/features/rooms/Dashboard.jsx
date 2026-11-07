@@ -10,7 +10,7 @@ export default function Dashboard() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const user = useSelector((state) => state.auth.user);
-  const items = useSelector((state) => state.room.items);
+  const items = useSelector((state) => state.rooms.items);
 
   useEffect(() => {
     dispatch(fetchRooms());
