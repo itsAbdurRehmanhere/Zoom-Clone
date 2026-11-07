@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import useLocalMedia from "../../lib/useLocalMedia";
+import useLocalMedia, {describeMediaError} from "../../lib/useLocalMedia";
 import { fetchRoom } from "../rooms/roomsSlice";
-import { setDisplayName } from "./callSettingsSlice";
+import {
+  setDisplayName,
+  setAudioDevice,
+  setVideoDevice,
+  toggleCam,
+  toggleMic,
+} from "./callSettingsSlice";
 
 export default function Lobby() {
   const { code } = useParams();
@@ -42,8 +48,8 @@ export default function Lobby() {
   }, [stream]);
 
   useEffect(() => {
-    stream?.getAudiotracks().forEach((t) => (t.enable = settings.micOn));
-    stream?.getVideotracks().forEach((t) => (t.enable = settings.camOn));
+    stream?.getAudioTracks().forEach((t) => (t.enabled = settings.micOn));
+    stream?.getVideoTracks().forEach((t) => (t.enabled = settings.camOn));
   }, [stream, settings.micOn, settings.camOn]);
 
   const handleJoin = () => {

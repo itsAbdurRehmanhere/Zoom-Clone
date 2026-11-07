@@ -32,8 +32,8 @@ export const {
   setDisplayName,
   toggleMic,
   toggleCam,
-  setAudioDevide,
-  setViderDevice,
+  setAudioDevice,
+  setVideoDevice,
 } = callSettingsSlice.actions;
 
 export default callSettingsSlice.reducer;

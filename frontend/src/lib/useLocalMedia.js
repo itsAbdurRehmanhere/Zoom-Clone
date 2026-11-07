@@ -22,7 +22,7 @@ export default function useLocalMedia({audioDeviceId, videoDeviceId}){
 
     useEffect(() =>{
         let cancelled = false
-        let acquired = false
+        let acquired = null
 
         async function start() {
             try{
