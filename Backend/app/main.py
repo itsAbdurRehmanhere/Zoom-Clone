@@ -19,3 +19,8 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(room.router)
 app.include_router(signaling.router)
+
+
+@app.api_route("/health", methods=["GET", "HEAD"])
+def health():
+    return {"status" : "ok"}

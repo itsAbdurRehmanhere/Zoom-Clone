@@ -2,7 +2,7 @@ import asyncio
 import uuid
 import jwt
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from sqlalchemy import select
+from sqlalchemy import select, or_
 from ..database import SessionLocal
 from ..models import Room, User, Message
 from ..security import decode_access_token
@@ -33,10 +33,10 @@ def authenticate(token:str, code:str):
         #     return None, 4404
         # return {"id": user_id, "name": user.name}, None
         
-        room_id = db.scalar(select(Room.id).where(Room.code == code))
-        if not room_id:
+        room = db.scalar(select(Room).where(Room.code == code))
+        if not room:
             return None, 4404
-        return {"id": user_id, "name": user.name, "room_id": room_id}, None
+        return {"id": user_id, "name": user.name, "room_id": room.id, "host_id":room.host_id}, None
     
 def message_to_dict(m: Message) -> dict:
     return{
@@ -45,28 +45,51 @@ def message_to_dict(m: Message) -> dict:
         "user_id": m.user_id,
         "name" : m.sender_name,
         "text" : m.text,
+        "private" : m.private_to_host,
         "created_at" : m.created_at.isoformat(),
     }
     
-def load_history(room_id: int) -> list[dict]:
+# def load_history(room_id: int) -> list[dict]:
+    # with SessionLocal() as db:
+    #     stmt = (
+    #         select(Message)
+    #         .where(Message.room_id == room_id)
+    #         # .order_by(Message.id.desc())
+    #         # .limit(HISTORY_LIMIT)
+    #     )
+    #     if user_id != host_id:
+    #         stmt = stmt.order_by(Me)
+    #     return [message_to_dict(m) for m in reversed(db.scalars(stmt).all())]
+ 
+def load_history(room_id: int, user_id: int, host_id: int) -> list[dict]:
     with SessionLocal() as db:
-        stmt = (
-            select(Message)
-            .where(Message.room_id == room_id)
-            .order_by(Message.id.desc())
-            .limit(HISTORY_LIMIT)
-        )
+        stmt = select(Message).where(Message.room_id == room_id)
+        if user_id != host_id:
+            stmt = stmt.where(
+                or_(Message.private_to_host.is_(False), Message.user_id == user_id)
+            )
+        stmt = stmt.order_by(Message.id.desc()).limit(HISTORY_LIMIT)
         return [message_to_dict(m) for m in reversed(db.scalars(stmt).all())]
     
-def save_message(room_id: int, user_id: int, name: str, text: str) -> dict:
-    with SessionLocal() as db:
+# def save_message(room_id: int, user_id: int, name: str, text: str) -> dict:
+#     with SessionLocal() as db:
         
-        m = Message(room_id=room_id, user_id=user_id, sender_name=name, text=text)
+#         m = Message(room_id=room_id, user_id=user_id, sender_name=name, text=text)
+#         db.add(m)
+#         db.commit()
+#         db.refresh(m)
+#         return message_to_dict(m)
+    
+def save_message(room_id: int, user_id: int, name: str, text: str, private: bool) -> dict:
+    with SessionLocal() as db:
+        m = Message(
+            room_id=room_id, user_id=user_id, sender_name=name,
+            text=text, private_to_host=private,
+        )
         db.add(m)
         db.commit()
         db.refresh(m)
         return message_to_dict(m)
-    
 
     
     
@@ -101,7 +124,7 @@ async def room_socket(ws: WebSocket, code: str):
         manager.add(code, peer)
         
         # await ws.send_json({"type": "joined", "peer_id": peer.peer_id, "peers": existing})
-        history = await asyncio.to_thread(load_history, user["room_id"])
+        history = await asyncio.to_thread(load_history, user["room_id"], user["id"], user["host_id"])
         await ws.send_json(
             {"type": "joined", "peer_id": peer.peer_id, "peers": existing, "messages": history}
         )
@@ -132,10 +155,14 @@ async def room_socket(ws: WebSocket, code: str):
                 text = str(msg.get("text", "")).strip()[:MAX_CHAT_LENGTH]
                 if not text:
                     continue
+                private =bool(msg.get("private")) and user["id"] != user["host_id"]
                 saved = await asyncio.to_thread(
-                    save_message, user["room_id"], user["id"], peer.name, text
+                    save_message, user["room_id"], user["id"], peer.name, text, private
                 )
-                await manager.broadcast(code, saved)
+                if private:
+                    await manager.send_to_users(code, {user["id"], user["host_id"]}, saved)
+                else:
+                    await manager.broadcast(code, saved)
     except WebSocketDisconnect:
         pass
     finally:

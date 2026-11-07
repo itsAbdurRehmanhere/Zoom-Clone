@@ -42,3 +42,10 @@ class ConnectionManager:
                 await peer.ws.send_json(message)
             except Exception:
                 pass
+    async def send_to_users(self, code: str, user_ids: set[int], message: dict) -> None:
+        for peer in self.members(code):
+            if peer.user_id in user_ids:
+                try:
+                    await peer.ws.send_json(message)
+                except Exception:
+                    pass
