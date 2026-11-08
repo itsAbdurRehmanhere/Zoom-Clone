@@ -11,6 +11,8 @@ import Controls from './Controls'
 import { toggleCam, toggleMic } from './callSettingsSlice'
 import ChatPanel from './ChatPanel'
 import { addMessages, clearChat, setMessages, toggleChat } from './chatSlice'
+import api from '../../lib/api'
+
 
 const CLOSE_MESSAGES = {
   4401: 'Your session expired. Please log in again.',
@@ -268,10 +270,21 @@ function CallScreen({ code }) {
       })
       .on('close', (e) => setConnectionError(CLOSE_MESSAGES[e.code] || 'Connection lost.'))
       .on('chat', (msg) => dispatch(addMessages(msg)))
-    signaling
-      .connect({ token, name: settings.displayName })
-      .then(async (joined) => {
-        if (cancelled) return
+    // signaling
+    //   .connect({ token, name: settings.displayName })
+    //   .then(async (joined) => {
+    //     if (cancelled) return
+
+    api('/ice-servers')
+    .catch(() => null)
+    .then((servers) => {
+      if (cancelled) return null
+      if (servers) manager.iceServers = servers
+      return signaling.connect({token, name: settings.displayName})
+    })
+    .then(async (joined) => {
+      if (cancelled || !joined) return
+      
         dispatch(setSelf(joined.peer_id))
         dispatch(setPeers(joined.peers))
         dispatch(setMessages(joined.messages ?? []))

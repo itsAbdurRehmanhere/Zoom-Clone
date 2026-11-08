@@ -9,10 +9,11 @@ export default class PeerManager{
         this.pcs = new Map()
         this.pendingIce = new Map()
         this.videoTrackOverride = null
+        this.iceServers = ICE_SERVERS
     }
 
     createPeer(peerId){
-        const pc = new RTCPeerConnection({iceServers: ICE_SERVERS})
+        const pc = new RTCPeerConnection({iceServers: this.iceServers})
         this.pcs.set(peerId, pc)
 
         // if(this.localStream){

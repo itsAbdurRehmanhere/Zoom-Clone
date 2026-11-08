@@ -37,3 +37,6 @@ dist/
 
 # Logs
 npm-debug.log*
+
+
+Claude outputs/

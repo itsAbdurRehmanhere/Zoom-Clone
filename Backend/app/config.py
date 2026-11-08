@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     frontend_origin: str = "http://localhost:5173"
+    metered_domain: str = ""
+    metered_turn_api_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env",extra="ignore")
 
