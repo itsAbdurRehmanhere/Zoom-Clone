@@ -19,7 +19,7 @@ export const createRoom = createAsyncThunk('room/createRoom', async(info, {rejec
 
 export const fetchRoom = createAsyncThunk('/rooms/fetchRoom', async(code, {rejectWithValue}) =>{
     try{
-        return await api(`/rooms/${code}`)
+        return await api(`/rooms/${code}/public`)
     }catch(err){
         return rejectWithValue(err.message)
     }

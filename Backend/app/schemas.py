@@ -34,3 +34,15 @@ class RoomOut(BaseModel):
     host_id: int
     scheduled_at: datetime | None
     created_at: datetime
+    locked: bool
+    chat_enabled: bool
+    audience_mic: bool
+    audience_cam: bool
+    
+    
+class RoomPublic(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
+    code: str
+    title: str
+    locked: bool

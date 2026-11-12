@@ -10,24 +10,22 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Lobby from "./features/call/Lobby";
 
 export default function App() {
-  const dispatch = useDispatch()
-  const {token, user} = useSelector((state) => state.auth)
+  const dispatch = useDispatch();
+  const { token, user } = useSelector((state) => state.auth);
 
-  useEffect(() =>{
-    if(token && ! user)
-      dispatch(fetchMe())
-    },[token, user, dispatch])
+  useEffect(() => {
+    if (token && !user) dispatch(fetchMe());
+  }, [token, user, dispatch]);
 
-    return (
-     <Routes>
-      <Route path="/login" element={<LoginPage/>}/>
-      <Route path="/signup" element={<SignupPage/>}/>
-      <Route element={<ProtectedRoute/>}>
-        <Route path="/" element={<Dashboard/>}/>
-        <Route path="/room/:code/lobby" element={< Lobby/>}/>
-        <Route path="/room/:code" element={< Room/>}/>
+  return (
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route path="/room/:code/lobby" element={<Lobby />} />
+      <Route path="/room/:code" element={<Room />} />
+      <Route element={<ProtectedRoute />}>
+        <Route path="/" element={<Dashboard />} />
       </Route>
-     </Routes> 
-    )
+    </Routes>
+  );
 }
-

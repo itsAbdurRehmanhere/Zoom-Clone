@@ -23,6 +23,10 @@ class Room(Base):
     title: Mapped[str] = mapped_column(String(100), default="Untitled meeting")
     host_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable= True)
+    locked: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
+    chat_enabled:Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    audience_mic:Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+    audience_cam:Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda:datetime.now(timezone.utc))
     
     host: Mapped["User"] = relationship()
@@ -32,7 +36,8 @@ class Message(Base):
     __tablename__ = "messages"
     id: Mapped[int] = mapped_column(primary_key=True)
     room_id: Mapped[int] = mapped_column(ForeignKey("rooms.id"), index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=True)
+    sender_key: Mapped[str] = mapped_column(String(64), default="", server_default="")
     sender_name: Mapped[str] = mapped_column(String(100))
     text: Mapped[str] = mapped_column(Text)
     private_to_host: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")

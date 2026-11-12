@@ -18,6 +18,8 @@ export default function Lobby() {
   const videoRef = useRef();
 
   const user = useSelector((state) => state.auth.user);
+  const token = useSelector((state) => state.auth.token);
+  const authLoading = !!token && !user;
   const {
     current: room,
     status,

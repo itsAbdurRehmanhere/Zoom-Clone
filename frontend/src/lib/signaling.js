@@ -13,12 +13,12 @@ export default class Signaling{
         return this
     }
 
-    connect({token, name}){
+    connect({token, name, guestId}){
         return new Promise((resolve, reject) =>{
             const ws = new WebSocket(`${WS_URL}/ws/room/${this.code}`)
             this.ws = ws
 
-            ws.onopen = () => this.send({type: 'join', token, name})
+            ws.onopen = () => this.send({type: 'join', token, name, guest_id:guestId})
 
             ws.onmessage= (e) => {
                 const message = JSON.parse(e.data)
