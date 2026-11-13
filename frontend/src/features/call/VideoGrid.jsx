@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import useSpeaking from '../../lib/useSpeaking'
+import useIsMobile from '../../lib/useIsMobile'
 
 function VideoTile({ stream, name, muted = false, mirrored = false, camOn = true, micOn = true }) {
   const ref = useRef(null)
@@ -76,12 +77,15 @@ export default function VideoGrid({
 //     </div>
 //   )
 
-  const cols = total === 1 ? 1 : total <= 4 ? 2 : 3
+    const isMobile = useIsMobile()
+  const cols = isMobile
+    ? total <= 2 ? 1 : 2
+    : total === 1 ? 1 : total <= 4 ? 2 : 3
   const rows = Math.ceil(total / cols)
 
   return (
     <div
-      className="grid min-h-0 min-w-0 flex-1 gap-3 p-3"
+            className="grid min-h-0 min-w-0 flex-1 gap-2 p-2 sm:gap-3 sm:p-3"
       style={{
         gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
         gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,

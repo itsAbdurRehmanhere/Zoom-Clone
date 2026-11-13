@@ -19,6 +19,7 @@ import { toggleCam, toggleMic } from "./callSettingsSlice";
 import ChatPanel from "./ChatPanel";
 import { addMessages, clearChat, setMessages, toggleChat } from "./chatSlice";
 import getGuestId from "../../lib/guest";
+import HostPanel from "./HostPanel";
 
 const CLOSE_MESSAGES = {
   4401: "Your session expired. Please log in again.",
@@ -51,6 +52,8 @@ function CallScreen({ code }) {
     signalingRef.current?.send({ type: "chat", text, private: isPrivate });
   const [isHost, setIsHost] = useState(false);
   const [myKey, setMyKey] = useState(null);
+  const [roomSettings, setRoomSettings] = useState(null);
+  const [hostOpen, setHostOpen] = useState(false);
 
   const [remoteStreams, setRemoteStreams] = useState({});
   const [connectionError, setConnectionError] = useState(null);
@@ -114,6 +117,37 @@ function CallScreen({ code }) {
 
   const toggleShare = () =>
     screenRef.current ? stopSharing() : startSharing();
+    const micAllowed = isHost || (roomSettings?.audience_mic ?? true);
+  const camAllowed = isHost || (roomSettings?.audience_cam ?? true);
+  const chatAllowed = isHost || (roomSettings?.chat_enabled ?? true);
+
+  // when the host turns mic/camera off for the audience, switch ours off too
+  useEffect(() => {
+    if (!micAllowed && settings.micOn) dispatch(toggleMic());
+  }, [micAllowed, settings.micOn, dispatch]);
+
+  useEffect(() => {
+    if (!camAllowed && settings.camOn) dispatch(toggleCam());
+  }, [camAllowed, settings.camOn, dispatch]);
+
+  useEffect(() => {
+    if (!camAllowed && screenRef.current) stopSharing();
+  }, [camAllowed, stopSharing]);
+
+  const updateRoom = (changes) =>
+    signalingRef.current?.send({ type: "host", action: "settings", ...changes });
+  const kickPeer = (peerId) =>
+    signalingRef.current?.send({ type: "host", action: "kick", peer_id: peerId });
+
+  // only one side panel open at a time
+  const handleToggleChat = () => {
+    if (!chatOpen) setHostOpen(false);
+    dispatch(toggleChat());
+  };
+  const handleToggleHost = () => {
+    if (!hostOpen && chatOpen) dispatch(toggleChat());
+    setHostOpen((o) => !o);
+  };
 
   // stop sharing if the user leaves the page
   useEffect(() => stopSharing, [stopSharing]);
@@ -163,7 +197,8 @@ function CallScreen({ code }) {
       .on("close", (e) =>
         setConnectionError(CLOSE_MESSAGES[e.code] || "Connection lost."),
       )
-      .on("chat", (msg) => dispatch(addMessages(msg)));
+      .on("chat", (msg) => dispatch(addMessages(msg)))
+      .on("room_settings", (m) => setRoomSettings(m.settings));
 
     signaling
       .connect({ token, name: settings.displayName, guestId: getGuestId() })
@@ -172,6 +207,7 @@ function CallScreen({ code }) {
         if (joined.ice_servers) manager.iceServers = joined.ice_servers;
         setIsHost(joined.you?.is_host ?? false);
         setMyKey(joined.you?.key ?? null);
+        setRoomSettings(joined.settings ?? null);
         dispatch(setSelf(joined.peer_id));
         dispatch(setPeers(joined.peers));
         dispatch(setMessages(joined.messages ?? []));
@@ -182,26 +218,6 @@ function CallScreen({ code }) {
         if (!cancelled)
           setConnectionError(CLOSE_MESSAGES[e?.code] || "Could not connect.");
       });
-
-    // api('/ice-servers')
-    // .catch(() => null)
-    // .then((servers) => {
-    //   if (cancelled) return null
-    //   if (servers) manager.iceServers = servers
-    //   return signaling.connect({token, name: settings.displayName})
-    // })
-    // .then(async (joined) => {
-    //   if (cancelled || !joined) return
-
-    //     dispatch(setSelf(joined.peer_id))
-    //     dispatch(setPeers(joined.peers))
-    //     dispatch(setMessages(joined.messages ?? []))
-    //     sendState()
-    //     for (const p of joined.peers) await manager.callPeer(p.peer_id)
-    //   })
-    //   .catch((e) => {
-    //     if (!cancelled) setConnectionError(CLOSE_MESSAGES[e?.code] || 'Could not connect.')
-    //   })
 
     return () => {
       cancelled = true;
@@ -237,10 +253,10 @@ function CallScreen({ code }) {
     );
   }
 
-  return (
-    <div className="flex h-screen flex-col bg-slate-900 text-white">
-      <header className="border-b border-slate-700 px-4 py-3">
-        <h1 className="font-medium">{room?.title}</h1>
+    return (
+    <div className="flex h-dvh flex-col bg-slate-900 text-white">
+      <header className="shrink-0 border-b border-slate-700 px-4 py-2 sm:py-3">
+        <h1 className="truncate font-medium">{room?.title}</h1>
         <p className="text-xs text-slate-400">{code}</p>
       </header>
 
@@ -265,6 +281,17 @@ function CallScreen({ code }) {
             onSend={sendChat}
             onClose={() => dispatch(toggleChat())}
             isHost={isHost}
+            myKey={myKey}
+            chatBlocked={!chatAllowed}
+          />
+        )}
+        {isHost && hostOpen && (
+          <HostPanel
+            settings={roomSettings}
+            participants={participants}
+            onChange={updateRoom}
+            onKick={kickPeer}
+            onClose={() => setHostOpen(false)}
           />
         )}
       </div>
@@ -274,6 +301,10 @@ function CallScreen({ code }) {
         camOn={settings.camOn}
         sharing={sharing}
         hasMedia={!!stream}
+        micBlocked={!micAllowed}
+        camBlocked={!camAllowed}
+        isHost={isHost}
+        hostOpen={hostOpen}
         onToggleMic={() => dispatch(toggleMic())}
         onToggleCam={() => dispatch(toggleCam())}
         onToggleShare={toggleShare}
@@ -281,7 +312,8 @@ function CallScreen({ code }) {
         onLeave={() => navigate("/")}
         chatOpen={chatOpen}
         unread={unread}
-        onToggleChat={() => dispatch(toggleChat())}
+        onToggleChat={handleToggleChat}
+        onToggleHost={handleToggleHost}
       />
     </div>
   );

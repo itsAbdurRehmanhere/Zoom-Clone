@@ -35,7 +35,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white">
-      <header className="flex items-center justify-between border-b border-slate-7-- px-6 py-4">
+      <header className="flex items-center justify-between border-b border-slate-700 px-6 py-4">
         <h1 className="text-xl font-semibold">Meet</h1>
         <div className="flex items-center gap-4">
           <span className=" text-slate-300">{user?.name}</span>
@@ -80,7 +80,7 @@ export default function Dashboard() {
                 <p className="font-medium">{room.title}</p>
                 <p className="text-sm text-slate-400">{room.code}</p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex-wrap gap-2">
                 <button onClick={()=> copyLink(room.code)} className="rounde bg-slate-700 px-3 py-1 text-sm">Copy link</button>
                 <button onClick={() => navigate(`/room/${room.code}/lobby`)} className="rounded bg-blue-600 px-3 py-1 text-sm">Join</button>
               </div>

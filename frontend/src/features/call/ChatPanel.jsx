@@ -77,12 +77,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { useSelector } from 'react-redux'
 
-export default function ChatPanel({ onSend, onClose, isHost }) {
+export default function ChatPanel({ onSend, onClose, isHost, myKey, chatBlocked }) {
   const messages = useSelector((state) => state.chat.messages)
-  const me = useSelector((state) => state.auth.user)
+  // const me = useSelector((state) => state.auth.user)
   const [text, setText] = useState('')
   const [scope, setScope] = useState('everyone') // 'everyone' | 'host'
   const bottomRef = useRef(null)
+  const mine = m.sender === myKey
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -97,7 +98,7 @@ export default function ChatPanel({ onSend, onClose, isHost }) {
   }
 
   return (
-    <aside className="flex w-80 shrink-0 flex-col border-l border-slate-700 bg-slate-900">
+    <aside className="fixed inset-0 z-30 flex flex-col bg-slate-900 sm:static sm:inset-auto sm:z-auto sm:w-80 sm:shrink-0 sm:border-l sm:border-slate-700">
       <div className="flex items-center justify-between border-b border-slate-700 px-4 py-3">
         <h2 className="font-medium">Chat</h2>
         <button onClick={onClose} className="text-sm text-slate-400 hover:text-white">
@@ -135,8 +136,12 @@ export default function ChatPanel({ onSend, onClose, isHost }) {
         })}
         <div ref={bottomRef} />
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-2 border-t border-slate-700 p-3">
+        {chatBlocked ? (
+    <p className="border-t border-slate-700 p-3 text-center text-sm text-slate-400">
+      The host has turned chat off.
+    </p>
+  ) : (
+    <form onSubmit={handleSubmit} className="space-y-2 border-t border-slate-700 p-3">
         {!isHost && (
           <div className="flex gap-1 text-xs">
             <span className="py-1 text-slate-400">To:</span>
@@ -165,7 +170,7 @@ export default function ChatPanel({ onSend, onClose, isHost }) {
             onChange={(e) => setText(e.target.value)}
             maxLength={2000}
             placeholder={!isHost && scope === 'host' ? 'Message to host only' : 'Message everyone'}
-            className="flex-1 rounded bg-slate-800 px-3 py-2 text-sm"
+            className="flex-1 rounded bg-slate-800 px-3 py-2 text-base sm:text-sm"
           />
           <button
             type="submit"
@@ -176,6 +181,9 @@ export default function ChatPanel({ onSend, onClose, isHost }) {
           </button>
         </div>
       </form>
+  )}
+
+      
     </aside>
   )
 }

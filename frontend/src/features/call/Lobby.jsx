@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import useLocalMedia, {describeMediaError} from "../../lib/useLocalMedia";
+import useLocalMedia, { describeMediaError } from "../../lib/useLocalMedia";
 import { fetchRoom } from "../rooms/roomsSlice";
 import {
   setDisplayName,
@@ -58,6 +58,7 @@ export default function Lobby() {
     dispatch(setDisplayName(name.trim()));
     navigate(`/room/${code}`);
   };
+  if (authLoading) return <p className="p-6 text-white">Loading...</p>;
   if (status === "loading") return <p className="p-6 text-white">Loading...</p>;
   if (roomError) {
     return (
@@ -113,7 +114,7 @@ export default function Lobby() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full rounded bg-slate-800 px-3 py-2"
+            className="w-full rounded bg-slate-800 px-3 py-2 text-base sm:text-sm"
           />
 
           <label className="block text-sm text-slate-400">
@@ -155,6 +156,18 @@ export default function Lobby() {
           >
             Join now
           </button>
+          {!user && (
+            <p className="text-sm text-slate-400">
+              Have an account?{" "}
+              <Link
+                to="/login"
+                state={{ from: location }}
+                className="text-blue-400"
+              >
+                Log in
+              </Link>
+            </p>
+          )}
         </div>
       </div>
     </div>
