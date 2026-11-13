@@ -18,6 +18,9 @@ function Toggle({ label, hint, checked, onChange }) {
 export default function HostPanel({
   settings,
   participants,
+  waiting = [],
+  onAdmit,
+  onDeny,
   onChange,
   onKick,
   onClose,
@@ -38,10 +41,46 @@ export default function HostPanel({
       </div>
 
       <div className="flex-1 space-y-5 overflow-y-auto p-4">
+        {waiting.length > 0 && (
+          <div>
+            <h3 className="mb-2 text-sm font-medium text-amber-400">
+              Waiting to join ({waiting.length})
+            </h3>
+            <ul className="space-y-2">
+              {waiting.map((w) => (
+                <li
+                  key={w.peer_id}
+                  className="flex items-center justify-between rounded-lg bg-slate-800 px-3 py-2"
+                >
+                  <span className="min-w-0 truncate text-sm">
+                    {w.name}
+                    {w.guest && (
+                      <span className="ml-2 text-xs text-slate-400">guest</span>
+                    )}
+                  </span>
+                  <span className="ml-3 flex shrink-0 gap-2">
+                    <button
+                      onClick={() => onAdmit(w.peer_id)}
+                      className="rounded bg-green-600 px-3 py-1 text-xs"
+                    >
+                      Admit
+                    </button>
+                    <button
+                      onClick={() => onDeny(w.peer_id)}
+                      className="rounded bg-red-600 px-3 py-1 text-xs"
+                    >
+                      Deny
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-2">
           <Toggle
-            label="Lock meeting"
-            hint="No one new can join"
+            label="Waiting room"
+            hint="New people wait until you let them in"
             checked={settings.locked}
             onChange={(v) => onChange({ locked: v })}
           />

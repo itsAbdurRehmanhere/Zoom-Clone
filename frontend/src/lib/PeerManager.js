@@ -105,6 +105,14 @@ export default class PeerManager{
         }
     }
 
+        async replaceCameraTrack(track){
+        if (this.videoTrackOverride) return // screen share is on; the camera comes back when it stops
+        for (const pc of this.pcs.values()){
+            const sender = pc.getSenders().find((s) => s.track?.kind === 'video')
+            if (sender) await sender.replaceTrack(track)
+        }
+    }
+
     removePeer(peerId){
         this.pcs.get(peerId)?.close()
         this.pcs.delete(peerId)

@@ -26,10 +26,13 @@ export default function Controls({
   unread,
   isHost,
   hostOpen,
+  waitingCount,
+  canFlip,
   micBlocked,
   camBlocked,
   onToggleMic,
   onToggleCam,
+  onFlipCamera,
   onToggleShare,
   onCopyLink,
   onToggleChat,
@@ -54,6 +57,13 @@ export default function Controls({
         disabled={!hasMedia || camBlocked}
         title={camBlocked ? "The host has turned cameras off" : undefined}
       />
+      {canFlip && (
+        <ControlButton
+          label="Flip camera"
+          onClick={onFlipCamera}
+          disabled={!hasMedia || camBlocked}
+        />
+      )}
       {canShare && (
         <ControlButton
           label={sharing ? "Stop sharing" : "Share"}
@@ -69,8 +79,8 @@ export default function Controls({
       />
       {isHost && (
         <ControlButton
-          label="Host"
-          tone={hostOpen ? "host" : "neutral"}
+          label={waitingCount > 0 ? `Host (${waitingCount})` : "Host"}
+          tone={hostOpen || waitingCount > 0 ? "host" : "neutral"}
           onClick={onToggleHost}
         />
       )}

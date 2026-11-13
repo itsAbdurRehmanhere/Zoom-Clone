@@ -108,6 +108,12 @@ export default function Lobby() {
           <div>
             <h1 className="text-2xl font-semibold">{room?.title}</h1>
             <p className="text-sm text-slate-400">{code}</p>
+            {room?.locked && (
+              <p className="mt-2 rounded bg-amber-900/60 px-3 py-2 text-sm">
+                This meeting has a waiting room. After you join, the host will
+                let you in.
+              </p>
+            )}
           </div>
 
           <input

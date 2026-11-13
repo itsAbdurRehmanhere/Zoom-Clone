@@ -20,6 +20,7 @@ import ChatPanel from "./ChatPanel";
 import { addMessages, clearChat, setMessages, toggleChat } from "./chatSlice";
 import getGuestId from "../../lib/guest";
 import HostPanel from "./HostPanel";
+import useIsMobile from "../../lib/useIsMobile";
 
 const CLOSE_MESSAGES = {
   4401: "Your session expired. Please log in again.",
@@ -27,6 +28,7 @@ const CLOSE_MESSAGES = {
   4404: "Meeting not found.",
   4405: "You were removed from this meeting by the host.",
   4406: "This meeting is locked by the host.",
+  4407: "The host declined your request to join.",
 };
 
 export default function Room() {
@@ -60,15 +62,25 @@ function CallScreen({ code }) {
   const [screenStream, setScreenStream] = useState(null);
   const sharing = screenStream !== null;
 
+  const [waiting, setWaiting] = useState(false);
+  const [waitingList, setWaitingList] = useState([]);
+  const [facing, setFacing] = useState("user");
+
   const signalingRef = useRef(null);
   const managerRef = useRef(null);
   const screenRef = useRef(null);
   const stateRef = useRef({ micOn: settings.micOn, camOn: settings.camOn });
 
-  const { stream, error: mediaError } = useLocalMedia({
+  const {
+    stream,
+    error: mediaError,
+    devices,
+  } = useLocalMedia({
     audioDeviceId: settings.audioDeviceId,
     videoDeviceId: settings.videoDeviceId,
   });
+  const isMobile = useIsMobile();
+  const canFlip = isMobile && devices.videoInputs.length > 1;
 
   const sendState = useCallback(() => {
     signalingRef.current?.send({ type: "state", ...stateRef.current });
@@ -117,7 +129,7 @@ function CallScreen({ code }) {
 
   const toggleShare = () =>
     screenRef.current ? stopSharing() : startSharing();
-    const micAllowed = isHost || (roomSettings?.audience_mic ?? true);
+  const micAllowed = isHost || (roomSettings?.audience_mic ?? true);
   const camAllowed = isHost || (roomSettings?.audience_cam ?? true);
   const chatAllowed = isHost || (roomSettings?.chat_enabled ?? true);
 
@@ -135,9 +147,56 @@ function CallScreen({ code }) {
   }, [camAllowed, stopSharing]);
 
   const updateRoom = (changes) =>
-    signalingRef.current?.send({ type: "host", action: "settings", ...changes });
+    signalingRef.current?.send({
+      type: "host",
+      action: "settings",
+      ...changes,
+    });
   const kickPeer = (peerId) =>
-    signalingRef.current?.send({ type: "host", action: "kick", peer_id: peerId });
+    signalingRef.current?.send({
+      type: "host",
+      action: "kick",
+      peer_id: peerId,
+    });
+  const admitPeer = (peerId) =>
+    signalingRef.current?.send({
+      type: "host",
+      action: "admit",
+      peer_id: peerId,
+    });
+  const denyPeer = (peerId) =>
+    signalingRef.current?.send({
+      type: "host",
+      action: "deny",
+      peer_id: peerId,
+    });
+
+  const openCamera = (mode) =>
+    navigator.mediaDevices
+      .getUserMedia({ video: { facingMode: { exact: mode } } })
+      .then((s) => s.getVideoTracks()[0]);
+
+  const flipCamera = async () => {
+    if (!stream) return;
+    const next = facing === "user" ? "environment" : "user";
+    const old = stream.getVideoTracks()[0];
+    old?.stop(); // many phones can't open two cameras at once
+    let track;
+    try {
+      track = await openCamera(next);
+      setFacing(next);
+    } catch {
+      try {
+        track = await openCamera(facing); // switching failed: bring the old one back
+      } catch {
+        return;
+      }
+    }
+    track.enabled = settings.camOn;
+    if (old) stream.removeTrack(old);
+    stream.addTrack(track);
+    await managerRef.current?.replaceCameraTrack(track);
+  };
 
   // only one side panel open at a time
   const handleToggleChat = () => {
@@ -198,12 +257,15 @@ function CallScreen({ code }) {
         setConnectionError(CLOSE_MESSAGES[e.code] || "Connection lost."),
       )
       .on("chat", (msg) => dispatch(addMessages(msg)))
-      .on("room_settings", (m) => setRoomSettings(m.settings));
+      .on("room_settings", (m) => setRoomSettings(m.settings))
+      .on("waiting", () => setWaiting(true))
+      .on("waiting_list", (m) => setWaitingList(m.waiting ?? []));
 
     signaling
       .connect({ token, name: settings.displayName, guestId: getGuestId() })
       .then(async (joined) => {
         if (cancelled) return;
+        setWaiting(false);
         if (joined.ice_servers) manager.iceServers = joined.ice_servers;
         setIsHost(joined.you?.is_host ?? false);
         setMyKey(joined.you?.key ?? null);
@@ -253,12 +315,54 @@ function CallScreen({ code }) {
     );
   }
 
+  if (waiting) {
     return (
+      <div className="flex h-dvh flex-col items-center justify-center gap-4 bg-slate-900 p-6 text-center text-white">
+        <p className="text-lg font-medium">
+          Waiting for the host to let you in…
+        </p>
+        <p className="text-sm text-slate-400">{room?.title}</p>
+        <button
+          onClick={() => navigate("/")}
+          className="rounded bg-slate-700 px-4 py-2 text-sm"
+        >
+          Leave
+        </button>
+      </div>
+    );
+  }
+
+  return (
     <div className="flex h-dvh flex-col bg-slate-900 text-white">
       <header className="shrink-0 border-b border-slate-700 px-4 py-2 sm:py-3">
         <h1 className="truncate font-medium">{room?.title}</h1>
         <p className="text-xs text-slate-400">{code}</p>
       </header>
+
+      {isHost && waitingList.length > 0 && !hostOpen && (
+        <div className="flex shrink-0 items-center justify-between gap-2 bg-amber-900 px-4 py-2 text-sm">
+          <span className="min-w-0 truncate">
+            {waitingList[0].name}
+            {waitingList.length > 1 &&
+              ` and ${waitingList.length - 1} more`}{" "}
+            want to join
+          </span>
+          <div className="flex shrink-0 gap-2">
+            <button
+              onClick={() => admitPeer(waitingList[0].peer_id)}
+              className="rounded bg-green-600 px-3 py-1"
+            >
+              Admit
+            </button>
+            <button
+              onClick={() => setHostOpen(true)}
+              className="rounded bg-slate-700 px-3 py-1"
+            >
+              Review
+            </button>
+          </div>
+        </div>
+      )}
 
       {mediaError && (
         <p className="bg-yellow-900 px-4 py-2 text-sm">
@@ -289,6 +393,9 @@ function CallScreen({ code }) {
           <HostPanel
             settings={roomSettings}
             participants={participants}
+            waiting={waitingList}
+            onAdmit={admitPeer}
+            onDeny={denyPeer}
             onChange={updateRoom}
             onKick={kickPeer}
             onClose={() => setHostOpen(false)}
